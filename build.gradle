@@ -1,0 +1,79 @@
+import java.time.LocalDateTime
+import java.util.stream.IntStream
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.1'
+	id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.verycool'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: '3.2.1'
+	implementation group: 'org.springframework.security', name: 'spring-security-oauth2-resource-server', version: '6.2.1'
+	implementation group: 'org.springframework.security', name: 'spring-security-oauth2-jose', version: '6.2.1'
+	implementation group: 'org.springframework.boot', name: 'spring-boot-configuration-processor', version: '3.2.1'
+	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.3.0'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	runtimeOnly 'com.h2database:h2'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+task generateIdeas() {
+	doLast {
+		File dataSql = file("src/main/resources/data.sql")
+		dataSql.write("")
+
+		//TODO temporary solution for POC, users should be managed by spring security
+		dataSql.append("insert into idea_user(username, password, created)" +
+				"values ('Name1', 'test123','" + LocalDateTime.now().minusDays(100) + "');\n")
+		dataSql.append("insert into idea_user(username, password, created)" +
+				"values ('Name2', 'test123','" + LocalDateTime.now().minusDays(100) + "');\n")
+
+		IntStream.rangeClosed(1, 100).forEach(i -> {
+			dataSql.append("insert into idea(user_id, title, content, created) values (1, 'Test idea ${i}', 'Content ${i}','" +
+					LocalDateTime.now().minusDays(100-i) + "');\n")
+		})
+
+		IntStream.rangeClosed(1,100).forEach(i-> {
+			int ideaId = 1 + i /10
+			dataSql.append("insert into idea_comment(idea_id, user_id, content, created)" +
+					" values(${ideaId}, 1, 'Comment ${i}', '" + LocalDateTime.now().minusDays(100 - i) + "');\n")
+		})
+
+		IntStream.rangeClosed(1,100).forEach(i-> {
+			int userId = 1
+			dataSql.append("insert into idea_like(idea_id, user_id, created)" +
+					" values(${i}, ${userId}, '" + LocalDateTime.now().minusDays(100 - i) + "');\n")
+		})
+
+		IntStream.rangeClosed(1,50).forEach(i-> {
+			int userId = 2
+			dataSql.append("insert into idea_like(idea_id, user_id, created)" +
+					" values(${i}, ${userId}, '" + LocalDateTime.now().minusDays(100 - i) + "');\n")
+		})
+	}
+}
